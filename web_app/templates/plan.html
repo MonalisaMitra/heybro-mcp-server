@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Plan a trip — heyBro{% endblock %}
+{% block tagline %}Add every stop on your route — we'll rank them calmest-first using live conditions.{% endblock %}
+
+{% block content %}
+  <form id="plan-add-form" class="search-row" autocomplete="off">
+    <input id="plan-q" type="search" placeholder="Add a stop — e.g. Shimla" required>
+    <button type="submit">Add stop</button>
+    <button type="button" id="plan-use-here" title="Add my current location">📍 Add near me</button>
+  </form>
+  <div id="plan-suggestions" class="suggestions" hidden></div>
+
+  <div id="plan-status" class="hint small"></div>
+
+  <div id="plan-out" class="out"></div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/plan.js') }}"></script>
+{% endblock %}

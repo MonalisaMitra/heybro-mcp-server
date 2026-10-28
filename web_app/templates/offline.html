@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline — heyBro</title>
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<meta name="theme-color" content="#0b1220">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <a href="/" class="brand"><h1>hey<span>Bro</span></h1></a>
+    </div>
+    <div class="wrap"><p class="tagline">You're offline.</p></div>
+  </header>
+  <main class="wrap">
+    <section class="panel">
+      <h2>No connection right now</h2>
+      <p>This page is served by the service worker when there's no network and nothing cached for what you asked for.
+        The home page can still show the last live conditions it saved — tap below to try it.</p>
+      <p><a href="/">Go to Conditions</a> — if you've loaded a place before, it'll show saved data with a note on
+        how old it is.</p>
+      <p class="small muted">Saved map areas and emergency numbers may still work offline if you've opened them
+        before this trip.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}heyBro — live travel-safety intel{% endblock %}</title>
+<meta name="description" content="Weather, active disasters, official alerts and road incidents for any place, from free live providers — no guessing, no invented data.">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+<meta name="theme-color" content="#0b1220">
+<link rel="icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <a href="{{ url_for('index') }}" class="brand"><h1>hey<span>Bro</span></h1></a>
+      <nav class="nav">
+        <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' else '' }}">Conditions</a>
+        <a href="{{ url_for('map_page') }}" class="{{ 'active' if active == 'map' else '' }}">Map</a>
+        <a href="{{ url_for('plan_page') }}" class="{{ 'active' if active == 'plan' else '' }}">Plan a trip</a>
+        <a href="{{ url_for('safety_page') }}" class="{{ 'active' if active == 'safety' else '' }}">Safety</a>
+      </nav>
+    </div>
+    <div class="wrap">
+      <p class="tagline">{% block tagline %}Live travel-safety intel — weather, disasters, alerts, roads. Nothing invented.{% endblock %}</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="wrap foot">
+    <p>Sources: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+      · <a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a>
+      · <a href="https://www.weather.gov/" target="_blank" rel="noopener">US NWS</a>
+      · <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OSM Nominatim</a>
+      · TomTom (where configured)</p>
+    <p class="muted small">heyBro computes nothing beyond simple labelled thresholds. Always confirm with your
+      national disaster authority before making a safety decision. Emergency numbers are a curated reference,
+      not a live feed — verify locally.</p>
+  </footer>
+
+  <div id="sos-widget" class="sos-widget" hidden>
+    <button type="button" id="sos-toggle" class="sos-toggle" title="Emergency numbers">🆘</button>
+    <div id="sos-panel" class="sos-panel" hidden></div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Safety — heyBro{% endblock %}
+{% block tagline %}Emergency numbers, official advisories, and a few things worth checking before you go.{% endblock %}
+
+{% block content %}
+  <section class="panel">
+    <div class="row between"><h2>Emergency numbers</h2><span class="badge none">Reference</span></div>
+    <form id="safety-cc-form" class="search-row">
+      <input id="safety-cc" type="text" maxlength="2" placeholder="Country code, e.g. IN" style="text-transform:uppercase; max-width:160px;">
+      <button type="submit">Look up</button>
+      <button type="button" id="safety-use-here" title="Use my current location">📍 Use my location</button>
+    </form>
+    <div id="safety-numbers"></div>
+  </section>
+
+  <section class="panel">
+    <div class="row between"><h2>Official travel advisories</h2><span class="badge none">External</span></div>
+    <p class="small muted">No single feed covers every country — check the official source for your nationality and destination.</p>
+    <ul id="safety-advisories" class="bullets"></ul>
+  </section>
+
+  <section class="panel">
+    <h2>Before you go — a quick checklist</h2>
+    <ul class="bullets">
+      <li>Share your route and expected check-in times with someone who isn't travelling with you.</li>
+      <li>Save the local emergency number and your embassy/consulate contact offline (screenshot or write it down).</li>
+      <li>Check the official advisory for your destination and nationality — not just the forecast.</li>
+      <li>Carry a physical map or save offline maps; don't rely on a signal that may not be there.</li>
+      <li>Know the nearest hospital and the fastest way to reach it from where you're staying.</li>
+      <li>If a GDACS or official alert is active near your route, have a fallback plan and a later decision point.</li>
+      <li>Keep devices charged and carry a backup power source on remote legs of a trip.</li>
+    </ul>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/safety.js') }}"></script>
+{% endblock %}

@@ -175,6 +175,7 @@ def disasters(lat, lon, radius_km=800):
             "from": p.get("fromdate"), "to": p.get("todate"), "distance_km": round(dist),
             "url": url.get("report") if isinstance(url, dict) else None,
             "description": p.get("description") or p.get("htmldescription"),
+            "lat": pt[1], "lon": pt[0],
         })
     out.sort(key=lambda e: e["distance_km"])
     return {"source": "live", "label": f"LIVE · GDACS active events within {radius_km} km",

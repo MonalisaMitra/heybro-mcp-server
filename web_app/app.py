@@ -4,12 +4,23 @@ A thin Flask front end over services/live_service.py: the same free, real
 providers the MCP server uses (Open-Meteo, GDACS, US NWS, Nominatim, TomTom),
 served as a page a person can open and use directly, no AI client required.
 
-Routes
-------
-    GET  /                      the app page
-    GET  /api/search?q=...      place-name -> candidate coordinates
-    GET  /api/reverse?lat&lon   coordinate -> place name + country code
-    GET  /api/conditions?lat&lon&country_code   weather, disasters, alerts, roads, risk score
+Pages
+-----
+    GET  /          conditions for one place — search, "near me", risk score
+    GET  /map        a Leaflet map of the point plus nearby GDACS events
+    GET  /plan       multi-stop trip planner, calmest-first
+    GET  /safety     emergency numbers + official advisory links + a checklist
+    GET  /offline    service-worker fallback page when there's no network
+
+API
+---
+    GET  /api/search?q=...                       place-name -> candidate coordinates
+    GET  /api/reverse?lat&lon                     coordinate -> place name + country code
+    GET  /api/conditions?lat&lon&country_code     weather, disasters, alerts, roads, elevation, risk
+    GET  /api/disasters?lat&lon&radius_km         GDACS events only (lighter, for the map page)
+    GET  /api/emergency?country_code              curated emergency numbers for the SOS widget
+    GET  /sw.js                                   service worker, served at the root for full scope
+    GET  /manifest.webmanifest                    PWA manifest (also reachable under /static/)
 
 Environment
 -----------
@@ -27,9 +38,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from flask import Flask, jsonify, render_template, request  # noqa: E402
+from flask import Flask, jsonify, render_template, request, send_from_directory  # noqa: E402
 
 from services import live_service  # noqa: E402
+from services.emergency import get_emergency  # noqa: E402
 from services.http import ProviderError, fetch_json  # noqa: E402
 
 app = Flask(__name__)
@@ -100,7 +112,46 @@ def _risk_score(intel: dict) -> dict:
 
 @app.get("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", active="home")
+
+
+@app.get("/map")
+def map_page():
+    return render_template("map.html", active="map")
+
+
+@app.get("/plan")
+def plan_page():
+    return render_template("plan.html", active="plan")
+
+
+@app.get("/safety")
+def safety_page():
+    return render_template("safety.html", active="safety")
+
+
+@app.get("/offline")
+def offline_page():
+    return render_template("offline.html", active=None)
+
+
+@app.get("/sw.js")
+def service_worker():
+    # Served from the root path (not /static/js/sw.js) so its default scope is
+    # the whole origin — a service worker registered from /static/ could only
+    # ever control requests under /static/, never the page navigations.
+    resp = send_from_directory(Path(app.static_folder) / "js", "sw.js")
+    resp.headers["Service-Worker-Allowed"] = "/"
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@app.get("/manifest.webmanifest")
+def manifest_root():
+    # Also serve the manifest at the root. Browsers don't require this — the
+    # <link rel="manifest"> href already points at /static/manifest.webmanifest —
+    # but a root alias is a harmless convenience and matches where people expect to look.
+    return send_from_directory(app.static_folder, "manifest.webmanifest")
 
 
 @app.get("/healthz")
@@ -160,8 +211,43 @@ def api_conditions():
         intel = live_service.intel(lat, lon, country_code)
     except Exception as exc:  # intel() already isolates provider failures per-section
         return _error(exc, "aggregate travel conditions")
+
+    # Elevation isn't part of intel() — fetch it the same way the MCP server's
+    # get_elevation tool does, and isolate its failure the same way intel()
+    # isolates weather/disasters/roads: one dead provider never blanks the page.
+    try:
+        values = live_service.elevation([lat], [lon])
+        intel["elevation_m"] = values[0] if values else None
+    except ProviderError as exc:
+        intel["elevation_m"] = None
+        intel["errors"]["elevation"] = str(exc)
+
     intel["risk"] = _risk_score(intel)
     return jsonify({"ok": True, **intel})
+
+
+@app.get("/api/disasters")
+def api_disasters():
+    """A lighter read of just the GDACS events — the map page doesn't need weather/roads."""
+    try:
+        lat, lon = float(request.args["lat"]), float(request.args["lon"])
+    except (KeyError, ValueError):
+        return jsonify({"ok": False, "error": "lat and lon are required numbers."}), 400
+    try:
+        radius_km = int(request.args.get("radius_km") or 800)
+    except ValueError:
+        radius_km = 800
+    try:
+        data = live_service.disasters(lat, lon, radius_km=radius_km)
+    except ProviderError as exc:
+        return _error(exc, "active disasters")
+    return jsonify({"ok": True, **data})
+
+
+@app.get("/api/emergency")
+def api_emergency():
+    country_code = request.args.get("country_code") or None
+    return jsonify({"ok": True, **get_emergency(country_code)})
 
 
 if __name__ == "__main__":

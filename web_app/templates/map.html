@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Map — heyBro{% endblock %}
+{% block tagline %}Active disasters on a map — pan and zoom, saved map areas work offline.{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+{% endblock %}
+
+{% block content %}
+  <form id="map-search-form" class="search-row" autocomplete="off">
+    <input id="map-q" type="search" placeholder="Jump to a place — e.g. Pokhara" required>
+    <button type="submit">Go</button>
+    <button type="button" id="map-use-here" title="Use my current location">📍 Near me</button>
+  </form>
+  <div id="map-suggestions" class="suggestions" hidden></div>
+
+  <div id="map-status" class="hint small"></div>
+
+  <div id="map" class="map-canvas"></div>
+
+  <p class="small muted">Markers are active GDACS events within 800 km of the map centre, colour-coded by alert
+    level (red = highest). Tap a marker for details and a link to the official report.
+    Map tiles you've viewed are cached for offline use on devices that support it.</p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

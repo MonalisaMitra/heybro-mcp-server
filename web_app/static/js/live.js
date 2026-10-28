@@ -1,5 +1,20 @@
+/* heyBro — home page ("Conditions"): search, "near me", live render, offline fallback.
+ *
+ * Offline-first behaviour: every successful /api/conditions response is cached to
+ * localStorage (TM.store, key "last_intel") along with the place label and a
+ * timestamp. If a later fetch fails — no network, provider down, whatever — we
+ * don't just show an error: we also render the last cached result with a visible
+ * "Showing saved data from <time> — it may be out of date" banner, so a person who
+ * loses signal mid-trip still sees the last thing we knew, clearly labelled as stale.
+ *
+ * Deep links: /?lat=..&lon=..&name=..&country_code=.. loads that place directly
+ * (useful from the map/plan pages, or a bookmarked/shared link), and once resolved
+ * updates the address bar via history.replaceState so a copy-paste of the URL at
+ * any point reproduces the same view.
+ */
 (function () {
   "use strict";
+  const { esc, errorBox, getJSON, here, store, toast } = window.TM;
 
   const out = document.getElementById("out");
   const form = document.getElementById("search-form");
@@ -9,30 +24,13 @@
   const placeLabel = document.getElementById("place-label");
   const useHereBtn = document.getElementById("use-here");
   const refreshBtn = document.getElementById("refresh");
+  const staleBanner = document.getElementById("stale-banner");
 
   let current = null; // { lat, lon, label, country_code }
 
-  function esc(s) {
-    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-    }[c]));
-  }
-
   function loading(msg) {
+    staleBanner.hidden = true;
     out.innerHTML = `<p class="hint"><span class="spinner"></span>${esc(msg)}</p>`;
-  }
-
-  function errorBox(message) {
-    return `<div class="error-box"><strong>Couldn't load that.</strong><br>${esc(message)}</div>`;
-  }
-
-  async function getJSON(url) {
-    const res = await fetch(url);
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.ok === false) {
-      throw new Error(body.error || body.advice || `Request failed (${res.status})`);
-    }
-    return body;
   }
 
   function showSuggestions(results) {
@@ -51,6 +49,39 @@
         loadPlace(r.lat, r.lon, r.label, r.country_code);
       });
     });
+  }
+
+  function cacheIntel(d) {
+    store.set("last_intel", {
+      data: d,
+      label: current.label,
+      lat: current.lat,
+      lon: current.lon,
+      country_code: current.country_code,
+      saved_at: Date.now(),
+    });
+  }
+
+  function renderStaleFallback(reason) {
+    const cached = store.get("last_intel");
+    if (!cached || !cached.data) {
+      out.innerHTML = errorBox(reason);
+      return;
+    }
+    const when = new Date(cached.saved_at).toLocaleString();
+    staleBanner.hidden = false;
+    staleBanner.innerHTML = `⚠️ Couldn't refresh (${esc(reason)}). Showing saved data from <strong>${esc(when)}</strong> — it may be out of date.`;
+    render(cached.data);
+  }
+
+  function updateUrl() {
+    if (!current) return;
+    const params = new URLSearchParams();
+    params.set("lat", current.lat);
+    params.set("lon", current.lon);
+    if (current.label) params.set("name", current.label);
+    if (current.country_code) params.set("country_code", current.country_code);
+    history.replaceState(null, "", `?${params.toString()}`);
   }
 
   async function loadPlace(lat, lon, label, countryCode) {
@@ -75,8 +106,12 @@
         `/api/conditions?lat=${lat}&lon=${lon}` + (cc ? `&country_code=${encodeURIComponent(cc)}` : "")
       );
       render(d);
+      cacheIntel(d);
+      store.set("cc", current.country_code || null);
+      updateUrl();
+      window.TM.refreshSos();
     } catch (err) {
-      out.innerHTML = errorBox(err.message);
+      renderStaleFallback(err.message);
     }
   }
 
@@ -96,11 +131,15 @@
     const w = d.weather;
     if (w) {
       const c = w.current, u = w.units || {};
+      const elevation = typeof d.elevation_m === "number"
+        ? `<div class="elevation"><span class="small muted">Elevation</span><strong>${Math.round(d.elevation_m)} m</strong></div>`
+        : "";
       parts.push(`<section class="panel">
         <div class="row between"><h2>Right now</h2><span class="badge live">Live</span></div>
         <div class="now"><span class="icon">${c.icon}</span><span class="temp">${Math.round(c.temperature)}\u00b0</span>
           <div><strong>${esc(c.summary)}</strong><br>Feels like ${Math.round(c.feels_like)}\u00b0 \u00b7 Humidity ${c.humidity}%<br>
-          Wind ${c.wind} ${esc(u.wind_speed_10m || "km/h")} (gusts ${c.gusts}) \u00b7 Rain ${c.precipitation} mm</div></div>
+          Wind ${c.wind} ${esc(u.wind_speed_10m || "km/h")} (gusts ${c.gusts}) \u00b7 Rain ${c.precipitation} mm</div>
+          ${elevation}</div>
         <p class="small muted">Observed/modelled at ${esc(c.time)} local time (${esc(w.timezone)}). Source: <a href="${w.provider.url}" target="_blank" rel="noopener">${esc(w.provider.name)}</a>.</p>
       </section>
       <section class="panel">
@@ -135,7 +174,8 @@
     const ds = d.disasters;
     if (ds) {
       parts.push(`<section class="panel"><div class="row between"><h2>Natural disasters nearby</h2><span class="badge live">Live</span></div>
-        <p class="small muted">${esc(ds.label)} \u00b7 <a href="${ds.provider.url}" target="_blank" rel="noopener">GDACS</a></p>
+        <p class="small muted">${esc(ds.label)} \u00b7 <a href="${ds.provider.url}" target="_blank" rel="noopener">GDACS</a>
+          \u00b7 <a href="/map?lat=${current.lat}&lon=${current.lon}&name=${encodeURIComponent(current.label || "")}">View on map</a></p>
         ${ds.events.length
           ? `<ul class="list-plain">${ds.events.map((e) => `<li><strong>${esc(e.type)}: ${esc(e.name)}</strong> \u2014 ${esc(e.alert_level)} alert, ${e.distance_km} km away
               <div class="small muted">${esc(e.country || "")} \u00b7 ${esc((e.from || "").slice(0, 10))}${e.url ? ` \u00b7 <a href="${esc(e.url)}" target="_blank" rel="noopener">Report</a>` : ""}</div></li>`).join("")}</ul>`
@@ -161,6 +201,14 @@
       </section>`);
     }
 
+    if (d.errors && Object.keys(d.errors).length) {
+      const known = new Set(["weather", "disasters"]);
+      const other = Object.entries(d.errors).filter(([k]) => !known.has(k));
+      if (other.length) {
+        parts.push(`<section class="panel"><h2>Partial data</h2>${other.map(([k, msg]) => errorBox(`${k}: ${msg}`)).join("")}</section>`);
+      }
+    }
+
     out.innerHTML = parts.join("");
   }
 
@@ -173,7 +221,7 @@
     try {
       const r = await getJSON(`/api/search?q=${encodeURIComponent(q)}`);
       if (!r.results.length) {
-        out.innerHTML = `<p class="hint">No match for “${esc(q)}”. Try a different spelling or a nearby larger town.</p>`;
+        out.innerHTML = `<p class="hint">No match for \u201c${esc(q)}\u201d. Try a different spelling or a nearby larger town.</p>`;
         return;
       }
       if (r.results.length === 1) {
@@ -188,20 +236,39 @@
     }
   });
 
-  useHereBtn.addEventListener("click", () => {
-    if (!navigator.geolocation) {
-      out.innerHTML = errorBox("Your browser doesn't support geolocation.");
-      return;
-    }
+  useHereBtn.addEventListener("click", async () => {
     loading("Getting your location\u2026");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => loadPlace(pos.coords.latitude, pos.coords.longitude, null, null),
-      (err) => { out.innerHTML = errorBox("Couldn't get your location: " + err.message); },
-      { enableHighAccuracy: false, timeout: 10000 }
-    );
+    try {
+      const pos = await here();
+      loadPlace(pos.lat, pos.lon, null, null);
+    } catch (err) {
+      out.innerHTML = errorBox(err.message);
+    }
   });
 
   refreshBtn.addEventListener("click", () => {
     if (current) loadPlace(current.lat, current.lon, current.label, current.country_code);
   });
+
+  // Deep link: /?lat=..&lon=..&name=..&country_code=.. — otherwise fall back to the
+  // last place we had live data for, so returning to the tab offline still shows something.
+  (function boot() {
+    const params = new URLSearchParams(location.search);
+    const lat = parseFloat(params.get("lat"));
+    const lon = parseFloat(params.get("lon"));
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      loadPlace(lat, lon, params.get("name"), params.get("country_code"));
+      return;
+    }
+    const cached = store.get("last_intel");
+    if (cached && cached.data && Number.isFinite(cached.lat) && Number.isFinite(cached.lon)) {
+      current = { lat: cached.lat, lon: cached.lon, label: cached.label, country_code: cached.country_code };
+      placeLabel.textContent = cached.label || `${cached.lat.toFixed(3)}, ${cached.lon.toFixed(3)}`;
+      placeBanner.hidden = false;
+      const when = new Date(cached.saved_at).toLocaleString();
+      staleBanner.hidden = false;
+      staleBanner.innerHTML = `Showing saved data from <strong>${esc(when)}</strong> \u2014 tap \u21bb to refresh.`;
+      render(cached.data);
+    }
+  })();
 })();

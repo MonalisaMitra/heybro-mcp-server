@@ -1,21 +1,6 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>heyBro — live travel-safety intel</title>
-<meta name="description" content="Weather, active disasters, official alerts and road incidents for any place, from free live providers — no guessing, no invented data.">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-</head>
-<body>
-  <header class="top">
-    <div class="wrap top-row">
-      <h1>hey<span>Bro</span></h1>
-      <p class="tagline">Live travel-safety intel — weather, disasters, alerts, roads. Nothing invented.</p>
-    </div>
-  </header>
+{% extends "base.html" %}
 
-  <main class="wrap">
+{% block content %}
     <form id="search-form" class="search-row" autocomplete="off">
       <input id="q" type="search" name="q" placeholder="Search a place — e.g. Darjeeling, Kathmandu, Manila" required>
       <button type="submit">Search</button>
@@ -29,21 +14,13 @@
       <button type="button" id="refresh" title="Refresh">↻</button>
     </div>
 
+    <div id="stale-banner" class="banner stale" hidden></div>
+
     <div id="out" class="out">
-      <p class="hint">Search for a place, or tap “Near me”, to see live conditions.</p>
+      <p class="hint">Search for a place, or tap "Near me", to see live conditions.</p>
     </div>
-  </main>
+{% endblock %}
 
-  <footer class="wrap foot">
-    <p>Sources: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
-      · <a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a>
-      · <a href="https://www.weather.gov/" target="_blank" rel="noopener">US NWS</a>
-      · <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OSM Nominatim</a>
-      · TomTom (where configured)</p>
-    <p class="muted small">heyBro computes nothing beyond simple labelled thresholds. Always confirm with your
-      national disaster authority before making a safety decision.</p>
-  </footer>
-
-  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-</body>
-</html>
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/live.js') }}"></script>
+{% endblock %}
