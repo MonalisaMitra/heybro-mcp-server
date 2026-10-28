@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Explore — heyBro{% endblock %}
+{% block tagline %}Culture, photos, food, cafes/nightlife and sightseeing for a place — live where we can get it, a short reference note otherwise.{% endblock %}
+
+{% block content %}
+  <form id="explore-form" class="search-row" autocomplete="off">
+    <input id="explore-q" type="search" placeholder="Search a place — e.g. Hoi An" required>
+    <button type="submit">Explore</button>
+    <button type="button" id="explore-use-here" title="Use my current location">📍 Near me</button>
+  </form>
+  <div id="explore-suggestions" class="suggestions" hidden></div>
+
+  <div id="explore-banner" class="place-banner" hidden>
+    <span id="explore-label"></span>
+    <button type="button" id="explore-refresh" title="Refresh">↻</button>
+  </div>
+
+  <div id="explore-out" class="out">
+    <p class="hint">Search for a place, or tap "Near me", to see culture, food, nightlife and sights.</p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/explore.js') }}"></script>
+{% endblock %}

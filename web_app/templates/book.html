@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Book travel — heyBro{% endblock %}
+{% block tagline %}Pre-filled search links for flights, trains/buses, hotels and hostels — heyBro never processes payments or bookings itself.{% endblock %}
+
+{% block content %}
+  <form id="book-form" class="book-form" autocomplete="off">
+    <div class="book-row">
+      <label>From (optional)<input id="book-origin" type="text" placeholder="e.g. Delhi"></label>
+      <label>To<input id="book-dest" type="text" placeholder="e.g. Bangkok" required></label>
+    </div>
+    <div class="book-row">
+      <label>Depart<input id="book-depart" type="date"></label>
+      <label>Return (optional)<input id="book-return" type="date"></label>
+      <label>Travelers<input id="book-travelers" type="number" min="1" value="1"></label>
+    </div>
+    <button type="submit">Build search links</button>
+  </form>
+
+  <div id="book-out" class="out">
+    <p class="hint">Fill in where you're headed (and optionally when) to get pre-filled search links for flights,
+      trains/buses, hotels and hostels. Each opens the real site in a new tab — you search, compare and book there.</p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/book.js') }}"></script>
+{% endblock %}

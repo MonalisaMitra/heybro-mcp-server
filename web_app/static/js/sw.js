@@ -17,7 +17,7 @@
  */
 "use strict";
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL_CACHE = `hb-shell-${VERSION}`;
 const PAGES_CACHE = `hb-pages-${VERSION}`;
 const TILES_CACHE = "hb-tiles"; // unversioned on purpose — see header comment
@@ -26,6 +26,10 @@ const SHELL_URLS = [
   "/",
   "/map",
   "/plan",
+  "/explore",
+  "/book",
+  "/guide",
+  "/itinerary",
   "/safety",
   "/offline",
   "/static/css/app.css",
@@ -33,6 +37,10 @@ const SHELL_URLS = [
   "/static/js/live.js",
   "/static/js/map.js",
   "/static/js/plan.js",
+  "/static/js/explore.js",
+  "/static/js/book.js",
+  "/static/js/guide.js",
+  "/static/js/itinerary.js",
   "/static/js/safety.js",
   "/static/manifest.webmanifest",
 ];

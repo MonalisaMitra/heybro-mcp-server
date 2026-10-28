@@ -118,6 +118,16 @@
   function render(d) {
     const parts = [];
 
+    const placeName = encodeURIComponent(current.label || "");
+    const cc = encodeURIComponent(current.country_code || "");
+    parts.push(`<section class="panel">
+      <div class="row between"><h2>Go further for this place</h2></div>
+      <p class="small"><a href="/explore?lat=${current.lat}&lon=${current.lon}&name=${placeName}">🗺 Culture, food &amp; sights \u2192</a>
+        · <a href="/book?name=${placeName}">✈ Book travel \u2192</a>
+        · <a href="/guide?country_code=${cc}&name=${placeName}">🗣 Phrasebook &amp; volunteering \u2192</a>
+        · <a href="/itinerary">🗒 Add to itinerary \u2192</a></p>
+    </section>`);
+
     if (d.risk) {
       const bandClass = `band-${d.risk.band}`;
       parts.push(`<section class="panel">

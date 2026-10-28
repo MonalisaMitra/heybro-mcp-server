@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Itinerary — heyBro{% endblock %}
+{% block tagline %}Build a day-by-day plan, then download it as a PDF or import it into your calendar.{% endblock %}
+
+{% block content %}
+  <label class="itin-title-label">Trip title
+    <input id="itin-title" type="text" placeholder="My trip" class="itin-title-input">
+  </label>
+
+  <div class="itin-toolbar">
+    <button type="button" id="itin-add-day">+ Add day</button>
+    <button type="button" id="itin-import-stops">Import stops from trip planner</button>
+    <button type="button" id="itin-pdf">⬇ Download PDF</button>
+    <button type="button" id="itin-ics">⬇ Download calendar (.ics)</button>
+  </div>
+  <div id="itin-status" class="hint small"></div>
+
+  <div id="itin-days" class="out"></div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/itinerary.js') }}"></script>
+{% endblock %}

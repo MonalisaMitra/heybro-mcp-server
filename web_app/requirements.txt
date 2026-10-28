@@ -5,3 +5,4 @@
 # through the urllib-based services/http.py (no requests dependency).
 Flask>=3.0,<4
 gunicorn>=21,<23
+fpdf2>=2.8,<3

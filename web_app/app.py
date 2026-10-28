@@ -9,18 +9,27 @@ Pages
     GET  /          conditions for one place — search, "near me", risk score
     GET  /map        a Leaflet map of the point plus nearby GDACS events
     GET  /plan       multi-stop trip planner, calmest-first
+    GET  /explore    culture, photos, food, cafes & nightlife, sightseeing for a place
+    GET  /book       deep-link search for flights, trains/buses, hotels, hostels
+    GET  /guide      language phrasebook + volunteering resources
+    GET  /itinerary  day-by-day trip itinerary builder, with PDF/calendar export
     GET  /safety     emergency numbers + official advisory links + a checklist
     GET  /offline    service-worker fallback page when there's no network
 
 API
 ---
-    GET  /api/search?q=...                       place-name -> candidate coordinates
-    GET  /api/reverse?lat&lon                     coordinate -> place name + country code
-    GET  /api/conditions?lat&lon&country_code     weather, disasters, alerts, roads, elevation, risk
-    GET  /api/disasters?lat&lon&radius_km         GDACS events only (lighter, for the map page)
-    GET  /api/emergency?country_code              curated emergency numbers for the SOS widget
-    GET  /sw.js                                   service worker, served at the root for full scope
-    GET  /manifest.webmanifest                    PWA manifest (also reachable under /static/)
+    GET   /api/search?q=...                       place-name -> candidate coordinates
+    GET   /api/reverse?lat&lon                     coordinate -> place name + country code
+    GET   /api/conditions?lat&lon&country_code     weather, disasters, alerts, roads, elevation, risk
+    GET   /api/disasters?lat&lon&radius_km         GDACS events only (lighter, for the map page)
+    GET   /api/emergency?country_code              curated emergency numbers for the SOS widget
+    GET   /api/explore?lat&lon&name                culture (Wikipedia), photos, food/nightlife/sights (OSM)
+    GET   /api/phrasebook?country_code             basic survival phrases for the country's language
+    GET   /api/volunteering?country_code           curated volunteering platforms + safety notes
+    POST  /api/itinerary/pdf                       itinerary JSON -> downloadable PDF
+    POST  /api/itinerary/ics                       itinerary JSON -> downloadable calendar (.ics)
+    GET   /sw.js                                   service worker, served at the root for full scope
+    GET   /manifest.webmanifest                    PWA manifest (also reachable under /static/)
 
 Environment
 -----------
@@ -32,17 +41,27 @@ from __future__ import annotations
 
 import os
 import sys
+import uuid
+from datetime import datetime, timezone
+from io import BytesIO
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from flask import Flask, jsonify, render_template, request, send_from_directory  # noqa: E402
+from flask import Flask, jsonify, render_template, request, send_file, send_from_directory  # noqa: E402
 
-from services import live_service  # noqa: E402
+from services import live_service, places_service, wiki_service  # noqa: E402
 from services.emergency import get_emergency  # noqa: E402
 from services.http import ProviderError, fetch_json  # noqa: E402
+from services.phrasebook import get_phrasebook  # noqa: E402
+from services.volunteering import get_volunteering  # noqa: E402
+
+try:
+    from fpdf import FPDF
+except ImportError:  # keeps the app importable even if the optional PDF dep isn't installed yet
+    FPDF = None
 
 app = Flask(__name__)
 app.config.update(TOMTOM_API_KEY=os.environ.get("TOMTOM_API_KEY"))
@@ -123,6 +142,26 @@ def map_page():
 @app.get("/plan")
 def plan_page():
     return render_template("plan.html", active="plan")
+
+
+@app.get("/explore")
+def explore_page():
+    return render_template("explore.html", active="explore")
+
+
+@app.get("/book")
+def book_page():
+    return render_template("book.html", active="book")
+
+
+@app.get("/guide")
+def guide_page():
+    return render_template("guide.html", active="guide")
+
+
+@app.get("/itinerary")
+def itinerary_page():
+    return render_template("itinerary.html", active="itinerary")
 
 
 @app.get("/safety")
@@ -248,6 +287,174 @@ def api_disasters():
 def api_emergency():
     country_code = request.args.get("country_code") or None
     return jsonify({"ok": True, **get_emergency(country_code)})
+
+
+@app.get("/api/explore")
+def api_explore():
+    """Culture, photos, food, cafes/nightlife and sightseeing for a place.
+
+    Each section fails independently (same pattern as /api/conditions): a dead
+    Wikipedia or Overpass call never blanks the whole page, it just reports
+    that one section as unavailable.
+    """
+    name = request.args.get("name") or None
+    try:
+        lat = float(request.args["lat"]) if "lat" in request.args else None
+        lon = float(request.args["lon"]) if "lon" in request.args else None
+    except ValueError:
+        return jsonify({"ok": False, "error": "lat/lon must be numbers if provided."}), 400
+    if lat is None and not name:
+        return jsonify({"ok": False, "error": "Provide at least a place name or lat/lon."}), 400
+
+    result = {"errors": {}}
+
+    try:
+        result["culture"] = wiki_service.culture(name, lat, lon)
+    except ProviderError as exc:
+        result["culture"] = None
+        result["errors"]["culture"] = str(exc)
+
+    try:
+        result["photos"] = wiki_service.photos(name, lat, lon)
+    except ProviderError as exc:
+        result["photos"] = {"source": "none", "label": str(exc), "items": []}
+        result["errors"]["photos"] = str(exc)
+
+    if lat is not None and lon is not None:
+        for key, fn in (
+            ("food", lambda: places_service.food(lat, lon)),
+            ("nightlife", lambda: places_service.nightlife(lat, lon)),
+            ("attractions", lambda: places_service.attractions(lat, lon)),
+        ):
+            try:
+                result[key] = fn()
+            except ProviderError as exc:
+                result[key] = {"source": "none", "label": str(exc), "items": []}
+                result["errors"][key] = str(exc)
+    else:
+        placeholder = {"source": "none", "label": "Need coordinates to search nearby places.", "items": []}
+        result["food"] = result["nightlife"] = result["attractions"] = placeholder
+
+    return jsonify({"ok": True, **result})
+
+
+@app.get("/api/phrasebook")
+def api_phrasebook():
+    return jsonify({"ok": True, **get_phrasebook(request.args.get("country_code"))})
+
+
+@app.get("/api/volunteering")
+def api_volunteering():
+    return jsonify({"ok": True, **get_volunteering(request.args.get("country_code"))})
+
+
+def _pdf_safe(text):
+    """fpdf2's built-in core fonts only support Latin-1 — replace anything outside
+    that range rather than crashing the whole export over one emoji or CJK name."""
+    return (text or "").encode("latin-1", "replace").decode("latin-1")
+
+
+@app.post("/api/itinerary/pdf")
+def itinerary_pdf():
+    if FPDF is None:
+        return jsonify({"ok": False, "error": "PDF export isn't available on this server right now."}), 503
+    payload = request.get_json(silent=True) or {}
+    title = _pdf_safe((payload.get("title") or "My trip itinerary").strip()[:120] or "My trip itinerary")
+    days = payload.get("days") or []
+
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.cell(0, 12, title, new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(130, 130, 130)
+    pdf.cell(0, 6, "Built with heyBro - verify opening hours, prices and bookings independently.",
+             new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+
+    if not days:
+        pdf.set_font("Helvetica", "I", 11)
+        pdf.cell(0, 8, "No days added yet.", new_x="LMARGIN", new_y="NEXT")
+
+    for day in days:
+        pdf.set_font("Helvetica", "B", 13)
+        heading = _pdf_safe(day.get("date") or day.get("label") or "Day")
+        pdf.cell(0, 9, heading, new_x="LMARGIN", new_y="NEXT")
+        items = day.get("items") or []
+        if not items:
+            pdf.set_font("Helvetica", "I", 10)
+            pdf.set_text_color(130, 130, 130)
+            pdf.cell(0, 7, "  (no stops added)", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_text_color(0, 0, 0)
+        for item in items:
+            pdf.set_font("Helvetica", "", 11)
+            time_s = _pdf_safe(item.get("time") or "")
+            label_s = _pdf_safe(item.get("label") or "(untitled stop)")
+            prefix = (time_s + " - ") if time_s else ""
+            pdf.multi_cell(0, 6, f"  {prefix}{label_s}", new_x="LMARGIN", new_y="NEXT")
+            notes = item.get("notes")
+            if notes:
+                pdf.set_font("Helvetica", "I", 9)
+                pdf.set_text_color(130, 130, 130)
+                pdf.multi_cell(0, 5, f"      {_pdf_safe(notes)}", new_x="LMARGIN", new_y="NEXT")
+                pdf.set_text_color(0, 0, 0)
+        pdf.ln(3)
+
+    buf = BytesIO(pdf.output())
+    buf.seek(0)
+    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name="itinerary.pdf")
+
+
+def _ics_escape(text):
+    return (str(text or "")
+            .replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\n", "\\n").replace("\r", ""))
+
+
+@app.post("/api/itinerary/ics")
+def itinerary_ics():
+    """Only stops with a date export as calendar events — RFC 5339 needs DTSTART,
+    and an undated stop has nothing to put there."""
+    payload = request.get_json(silent=True) or {}
+    title = payload.get("title") or "My trip itinerary"
+    days = payload.get("days") or []
+    now_stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//heyBro//Itinerary//EN", "CALSCALE:GREGORIAN"]
+    exported = 0
+    for day in days:
+        date_str = (day.get("date") or "").strip().replace("-", "")
+        if len(date_str) != 8 or not date_str.isdigit():
+            continue
+        for item in day.get("items") or []:
+            label = item.get("label") or "Stop"
+            time_str = (item.get("time") or "").strip().replace(":", "")
+            if len(time_str) == 4 and time_str.isdigit():
+                dtstart = f"DTSTART:{date_str}T{time_str}00"
+            else:
+                dtstart = f"DTSTART;VALUE=DATE:{date_str}"
+            lines += [
+                "BEGIN:VEVENT",
+                f"UID:{uuid.uuid4()}@heybro",
+                f"DTSTAMP:{now_stamp}",
+                dtstart,
+                f"SUMMARY:{_ics_escape(label)}",
+            ]
+            if item.get("notes"):
+                lines.append(f"DESCRIPTION:{_ics_escape(item['notes'])}")
+            lines.append("END:VEVENT")
+            exported += 1
+    lines.append("END:VCALENDAR")
+
+    if not exported:
+        return jsonify({"ok": False, "error": "No dated stops to export \u2014 add a date to at least one day first."}), 400
+
+    ics_text = "\r\n".join(lines) + "\r\n"
+    buf = BytesIO(ics_text.encode("utf-8"))
+    buf.seek(0)
+    return send_file(buf, mimetype="text/calendar", as_attachment=True, download_name="itinerary.ics")
 
 
 if __name__ == "__main__":

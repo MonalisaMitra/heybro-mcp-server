@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Guide — heyBro{% endblock %}
+{% block tagline %}A survival phrasebook for the local language, plus curated volunteering platforms and safety notes.{% endblock %}
+
+{% block content %}
+  <form id="guide-form" class="search-row" autocomplete="off">
+    <input id="guide-q" type="search" placeholder="Search a place or country — e.g. Hanoi">
+    <button type="submit">Look up</button>
+    <button type="button" id="guide-use-here" title="Use my current location">📍 Near me</button>
+  </form>
+  <div id="guide-suggestions" class="suggestions" hidden></div>
+
+  <div id="guide-banner" class="place-banner" hidden>
+    <span id="guide-label"></span>
+  </div>
+
+  <div id="guide-out" class="out">
+    <p class="hint">Search a place (or tap "Near me") to see a basic phrasebook for the local language and
+      curated volunteering platforms.</p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/guide.js') }}"></script>
+{% endblock %}

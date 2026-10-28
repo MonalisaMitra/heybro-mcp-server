@@ -20,6 +20,10 @@
         <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' else '' }}">Conditions</a>
         <a href="{{ url_for('map_page') }}" class="{{ 'active' if active == 'map' else '' }}">Map</a>
         <a href="{{ url_for('plan_page') }}" class="{{ 'active' if active == 'plan' else '' }}">Plan a trip</a>
+        <a href="{{ url_for('explore_page') }}" class="{{ 'active' if active == 'explore' else '' }}">Explore</a>
+        <a href="{{ url_for('book_page') }}" class="{{ 'active' if active == 'book' else '' }}">Book</a>
+        <a href="{{ url_for('guide_page') }}" class="{{ 'active' if active == 'guide' else '' }}">Guide</a>
+        <a href="{{ url_for('itinerary_page') }}" class="{{ 'active' if active == 'itinerary' else '' }}">Itinerary</a>
         <a href="{{ url_for('safety_page') }}" class="{{ 'active' if active == 'safety' else '' }}">Safety</a>
       </nav>
     </div>
@@ -37,10 +41,14 @@
       · <a href="https://www.gdacs.org/" target="_blank" rel="noopener">GDACS</a>
       · <a href="https://www.weather.gov/" target="_blank" rel="noopener">US NWS</a>
       · <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">OSM Nominatim</a>
+      · <a href="https://wikipedia.org/" target="_blank" rel="noopener">Wikipedia</a>
+      · <a href="https://commons.wikimedia.org/" target="_blank" rel="noopener">Wikimedia Commons</a>
+      · <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a>
       · TomTom (where configured)</p>
     <p class="muted small">heyBro computes nothing beyond simple labelled thresholds. Always confirm with your
-      national disaster authority before making a safety decision. Emergency numbers are a curated reference,
-      not a live feed — verify locally.</p>
+      national disaster authority before making a safety decision. Emergency numbers, phrasebook entries and
+      volunteering platforms are curated references, not live feeds — verify locally. Booking links open
+      third-party search sites in a new tab; heyBro never processes payments or bookings itself.</p>
   </footer>
 
   <div id="sos-widget" class="sos-widget" hidden>
