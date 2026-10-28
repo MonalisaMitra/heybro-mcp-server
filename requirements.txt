@@ -1,0 +1,7 @@
+# heyBro MCP server — deploy dependencies.
+#
+# The server itself only needs the MCP SDK; every provider call goes through the
+# urllib-based shim in mcp_server/heybro_mcp.py, so there is no requests/flask
+# dependency even though services/live_service.py imports `flask.current_app`
+# (the shim stands in for it).
+mcp[cli]>=1.2.0

@@ -1,0 +1,28 @@
+# Render Blueprint for the heyBro MCP server.
+#
+# The service is the MCP server from mcp_server/heybro_mcp.py exposed over HTTP/SSE,
+# not the full heyBro Flask app. Clients connect to  https://<service>.onrender.com/sse
+services:
+  - type: web
+    name: heybro-mcp
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python mcp_server/heybro_mcp.py
+    envVars:
+      # Switches mcp.run() off stdio and onto the HTTP/SSE transport. Without this
+      # the process would wait on stdin and never open a port.
+      - key: HEYBRO_MCP_TRANSPORT
+        value: sse
+      # Every provider (Open-Meteo, GDACS, NWS, Nominatim) asks callers to identify
+      # themselves. Nominatim's usage policy requires a real contact address, so
+      # replace this before any sustained use.
+      - key: HEYBRO_USER_AGENT
+        value: heyBro-mcp/1.0 (+https://github.com/REPLACE_ME)
+      - key: HEYBRO_HTTP_TIMEOUT
+        value: "20"
+      # Optional: unlocks get_road_incidents. Left unset, that one tool reports
+      # honestly that road data is not configured and the other ten still work.
+      - key: TOMTOM_API_KEY
+        sync: false

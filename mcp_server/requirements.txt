@@ -1,0 +1,4 @@
+# heyBro MCP server
+# Everything else the server needs is in the Python standard library, so it also
+# runs outside the Flask app (see the shims in heybro_mcp.py).
+mcp[cli]>=1.2.0

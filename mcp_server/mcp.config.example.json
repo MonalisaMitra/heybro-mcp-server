@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "heybro-travel-intel": {
+      "command": "python",
+      "args": ["/absolute/path/to/heyBro/mcp_server/heybro_mcp.py"],
+      "env": {
+        "HEYBRO_USER_AGENT": "heyBro/1.0 (you@example.org)",
+        "HEYBRO_HTTP_TIMEOUT": "20",
+        "TOMTOM_API_KEY": ""
+      }
+    }
+  }
+}
