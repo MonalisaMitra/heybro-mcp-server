@@ -9,12 +9,12 @@
 
     <div id="suggestions" class="suggestions" hidden></div>
 
-    <p class="small muted quick-links">
-      <a href="{{ url_for('explore_page') }}">🗺 Explore culture, food &amp; sights</a>
-      · <a href="{{ url_for('book_page') }}">✈ Book travel</a>
-      · <a href="{{ url_for('guide_page') }}">🗣 Phrasebook &amp; volunteering</a>
-      · <a href="{{ url_for('itinerary_page') }}">🗒 Itinerary builder</a>
-    </p>
+    <div class="quick-links">
+      <a href="{{ url_for('explore_page') }}">🌍 Explore culture, food &amp; sights</a>
+      <a href="{{ url_for('book_page') }}">✈ Book travel</a>
+      <a href="{{ url_for('guide_page') }}">🗣 Phrasebook &amp; volunteering</a>
+      <a href="{{ url_for('itinerary_page') }}">🗒 Itinerary builder</a>
+    </div>
 
     <div id="place-banner" class="place-banner" hidden>
       <span id="place-label"></span>

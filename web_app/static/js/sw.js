@@ -17,7 +17,7 @@
  */
 "use strict";
 
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL_CACHE = `hb-shell-${VERSION}`;
 const PAGES_CACHE = `hb-pages-${VERSION}`;
 const TILES_CACHE = "hb-tiles"; // unversioned on purpose — see header comment
