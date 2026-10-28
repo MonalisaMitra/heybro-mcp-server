@@ -19,7 +19,7 @@ services:
       # themselves. Nominatim's usage policy requires a real contact address, so
       # replace this before any sustained use.
       - key: HEYBRO_USER_AGENT
-        value: heyBro-mcp/1.0 (+https://github.com/REPLACE_ME)
+        value: heyBro-mcp/1.0 (monalisamitraofficial@gmail.com)
       - key: HEYBRO_HTTP_TIMEOUT
         value: "20"
       # Optional: unlocks get_road_incidents. Left unset, that one tool reports
