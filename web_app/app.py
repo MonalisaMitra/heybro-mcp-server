@@ -51,12 +51,14 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from flask import Flask, jsonify, render_template, request, send_file, send_from_directory  # noqa: E402
+from flask_login import current_user  # noqa: E402
 
-from services import live_service, places_service, wiki_service  # noqa: E402
+from services import destinations, live_service, places_service, wiki_service  # noqa: E402
 from services.emergency import get_emergency  # noqa: E402
 from services.http import ProviderError, fetch_json  # noqa: E402
 from services.phrasebook import get_phrasebook  # noqa: E402
 from services.volunteering import get_volunteering  # noqa: E402
+from web_app.extensions import db, login_manager  # noqa: E402
 
 try:
     from fpdf import FPDF
@@ -64,7 +66,39 @@ except ImportError:  # keeps the app importable even if the optional PDF dep isn
     FPDF = None
 
 app = Flask(__name__)
-app.config.update(TOMTOM_API_KEY=os.environ.get("TOMTOM_API_KEY"))
+app.config.update(
+    TOMTOM_API_KEY=os.environ.get("TOMTOM_API_KEY"),
+    SECRET_KEY=os.environ.get("HEYBRO_SECRET_KEY") or "dev-only-insecure-key-set-HEYBRO_SECRET_KEY-in-prod",
+    # SQLite by default (a file next to the app, created on first run) — set DATABASE_URL
+    # (Render/Heroku convention) to point at a real Postgres instance for storage that
+    # survives redeploys; SQLite on Render's free tier resets when the service redeploys.
+    SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", "").replace("postgres://", "postgresql://", 1)
+        or f"sqlite:///{Path(app.instance_path) / 'heybro.sqlite3'}",
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+)
+Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+
+db.init_app(app)
+login_manager.init_app(app)
+
+from web_app.models import User  # noqa: E402  (import after db.init_app to avoid circulars)
+from web_app.auth import auth_bp  # noqa: E402
+
+app.register_blueprint(auth_bp)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+with app.app_context():
+    db.create_all()
+
+
+@app.context_processor
+def inject_auth():
+    return {"current_user": current_user}
 
 
 def _error(exc: Exception, what: str, status: int = 502):
@@ -132,6 +166,21 @@ def _risk_score(intel: dict) -> dict:
 @app.get("/")
 def index():
     return render_template("index.html", active="home")
+
+
+@app.get("/suggest")
+def suggest_page():
+    return render_template("suggest.html", active="suggest", vibes=destinations.available_vibes())
+
+
+@app.get("/destination/<dest_id>")
+def destination_page(dest_id):
+    dest = destinations.get_destination(dest_id)
+    if not dest:
+        return render_template("suggest.html", active="suggest", vibes=destinations.available_vibes(),
+                                not_found=dest_id), 404
+    return render_template("destination.html", active="suggest", dest=dest,
+                            traveler_type=request.args.get("traveler_type") or "")
 
 
 @app.get("/map")
@@ -346,6 +395,31 @@ def api_phrasebook():
 @app.get("/api/volunteering")
 def api_volunteering():
     return jsonify({"ok": True, **get_volunteering(request.args.get("country_code"))})
+
+
+@app.post("/api/suggest-trip")
+def api_suggest_trip():
+    """Rank the curated destination catalog against stated preferences — see
+    services/destinations.py for the (deliberately simple, non-AI) scoring."""
+    payload = request.get_json(silent=True) or {}
+    preferences = {
+        "vibes": payload.get("vibes") or [],
+        "budget": payload.get("budget"),
+        "region": payload.get("region"),
+        "traveler_type": payload.get("traveler_type"),
+        "trip_length_days": payload.get("trip_length_days"),
+    }
+    result = destinations.suggest(preferences, limit=6)
+    result["preferences"] = preferences
+    return jsonify({"ok": True, **result})
+
+
+@app.get("/api/destination/<dest_id>")
+def api_destination(dest_id):
+    detail = destinations.destination_detail(dest_id, request.args.get("traveler_type"))
+    if not detail:
+        return jsonify({"ok": False, "error": "Unknown destination."}), 404
+    return jsonify({"ok": True, **detail})
 
 
 def _pdf_safe(text):

@@ -80,6 +80,7 @@ window.TM = (function () {
         `<li><span class="sos-label">${esc(k.replace(/_/g, " "))}</span><a href="tel:${esc(nums[k])}">${esc(nums[k])}</a></li>`
       );
       panel.innerHTML = `
+        <div id="sos-activate-wrap"></div>
         <strong>${d.country_code ? "Emergency numbers — " + esc(d.country_code) : "Emergency numbers"}</strong>
         ${rows.length ? `<ul class="sos-list">${rows.join("")}</ul>` : `<p class="small muted">${esc(d.label)}</p>`}
         ${nums.note ? `<p class="small muted">${esc(nums.note)}</p>` : ""}
@@ -87,6 +88,7 @@ window.TM = (function () {
         <a class="sos-share" href="#" id="sos-share-link">📍 Share my current coordinates</a>
       `;
       widget.hidden = false;
+      if (window.TM && typeof window.TM.sosInit === "function") window.TM.sosInit();
       const shareLink = document.getElementById("sos-share-link");
       if (shareLink) {
         shareLink.addEventListener("click", async (e) => {
@@ -109,7 +111,8 @@ window.TM = (function () {
       }
     } catch (_) {
       widget.hidden = false;
-      panel.innerHTML = `<p class="small muted">Emergency numbers unavailable right now.</p>`;
+      panel.innerHTML = `<div id="sos-activate-wrap"></div><p class="small muted">Emergency numbers unavailable right now.</p>`;
+      if (window.TM && typeof window.TM.sosInit === "function") window.TM.sosInit();
     }
     toggle.addEventListener("click", () => { panel.hidden = !panel.hidden; }, { once: false });
   }

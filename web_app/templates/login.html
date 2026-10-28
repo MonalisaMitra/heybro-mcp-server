@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Log in — heyBro{% endblock %}
+{% block tagline %}Log in to save your emergency contacts so the SOS feature can reach them instantly.{% endblock %}
+
+{% block content %}
+  <section class="panel auth-panel">
+    <h2>Log in</h2>
+    {% if errors %}
+      <div class="error-box"><strong>Couldn't log you in.</strong><br>{{ errors|join("<br>")|safe }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('auth.login_submit') }}{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" class="book-form" autocomplete="on">
+      <div class="book-row">
+        <label>Username or email<input type="text" name="username" value="{{ form.username if form else '' }}" required autofocus></label>
+      </div>
+      <div class="book-row">
+        <label>Password<input type="password" name="password" required></label>
+      </div>
+      <button type="submit">Log in</button>
+    </form>
+    <p class="small muted">No account yet? <a href="{{ url_for('auth.register_page') }}">Create one</a> — it only takes a minute.</p>
+  </section>
+{% endblock %}

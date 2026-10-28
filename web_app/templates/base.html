@@ -17,6 +17,7 @@
     <div class="wrap top-row">
       <a href="{{ url_for('index') }}" class="brand"><h1>hey<span>Bro</span></h1></a>
       <nav class="nav">
+        <a href="{{ url_for('suggest_page') }}" class="{{ 'active' if active == 'suggest' else '' }}">🧭 Suggest Trip</a>
         <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' else '' }}">🌤 Conditions</a>
         <a href="{{ url_for('safety_page') }}" class="{{ 'active' if active == 'safety' else '' }}">🆘 Safety</a>
         <a href="{{ url_for('map_page') }}" class="{{ 'active' if active == 'map' else '' }}">🗺 Map</a>
@@ -26,6 +27,13 @@
         <a href="{{ url_for('book_page') }}" class="{{ 'active' if active == 'book' else '' }}">✈ Book</a>
         <a href="{{ url_for('guide_page') }}" class="{{ 'active' if active == 'guide' else '' }}">🗣 Guide</a>
       </nav>
+      <div class="auth-area">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('auth.account_page') }}" class="auth-link {{ 'active' if active == 'account' else '' }}">👤 {{ current_user.username }}</a>
+        {% else %}
+          <a href="{{ url_for('auth.login_page') }}" class="auth-link {{ 'active' if active == 'account' else '' }}">👤 Log in</a>
+        {% endif %}
+      </div>
     </div>
     <div class="wrap">
       <p class="tagline">{% block tagline %}Live travel-safety intel — weather, disasters, alerts, roads. Nothing invented.{% endblock %}</p>

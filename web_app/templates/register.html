@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Create account — heyBro{% endblock %}
+{% block tagline %}One account stores your emergency contact so the SOS feature can reach them without retyping it every time.{% endblock %}
+
+{% block content %}
+  <section class="panel auth-panel">
+    <h2>Create your account</h2>
+    {% if errors %}
+      <div class="error-box"><strong>Couldn't create that account.</strong><br>{{ errors|join("<br>")|safe }}</div>
+    {% endif %}
+    <form method="post" action="{{ url_for('auth.register_submit') }}" class="book-form" autocomplete="on">
+      <div class="book-row">
+        <label>Username<input type="text" name="username" minlength="3" value="{{ form.username if form else '' }}" required autofocus></label>
+      </div>
+      <div class="book-row">
+        <label>Email (optional, for your own records)<input type="email" name="email" value="{{ form.email if form else '' }}"></label>
+      </div>
+      <div class="book-row">
+        <label>Password<input type="password" name="password" minlength="8" required></label>
+        <label>Confirm password<input type="password" name="confirm" minlength="8" required></label>
+      </div>
+      <button type="submit">Create account</button>
+    </form>
+    <p class="small muted">Passwords are stored as a one-way hash — heyBro never stores or shows your plaintext password, even to you.</p>
+    <p class="small muted">Already have an account? <a href="{{ url_for('auth.login_page') }}">Log in</a>.</p>
+  </section>
+{% endblock %}

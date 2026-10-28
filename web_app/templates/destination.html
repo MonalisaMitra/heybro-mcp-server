@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ dest.name }} — heyBro{% endblock %}
+{% block tagline %}{{ dest.name }}, {{ dest.country }} — photos &amp; culture, language, food &amp; festivals, where to stay, best time to go, and how to get around.{% endblock %}
+
+{% block content %}
+  <div id="dest-root"
+       data-id="{{ dest.id }}" data-name="{{ dest.name }}" data-country="{{ dest.country }}"
+       data-country-code="{{ dest.country_code }}" data-lat="{{ dest.lat }}" data-lon="{{ dest.lon }}"
+       data-traveler-type="{{ traveler_type }}">
+
+    <section class="panel">
+      <div class="row between">
+        <h2>{{ dest.name }}, {{ dest.country }}</h2>
+        <a href="{{ url_for('suggest_page') }}" class="small">← Back to Suggest Trip</a>
+      </div>
+      <div id="dest-photos" class="photo-grid"><p class="hint">Loading photos…</p></div>
+      <div id="dest-culture"></div>
+    </section>
+
+    <section class="panel">
+      <div class="row between"><h2>🗣 Learn a little of the language</h2><span class="badge none">Reference</span></div>
+      <div id="dest-language"><p class="hint">Loading phrasebook…</p></div>
+    </section>
+
+    <section class="panel">
+      <div class="row between"><h2>🍜 Local food &amp; festivals</h2></div>
+      <div id="dest-food"><p class="hint">Loading nearby food…</p></div>
+      <div id="dest-festivals"></div>
+    </section>
+
+    <section class="panel">
+      <h2>🛏 Where to stay — luxury to budget</h2>
+      <div id="dest-stays"></div>
+    </section>
+
+    <section class="panel">
+      <h2>🗓 Best time to visit &amp; weather forecast</h2>
+      <div id="dest-best-time"></div>
+      <div id="dest-weather"><p class="hint">Loading forecast…</p></div>
+    </section>
+
+    <section class="panel">
+      <div class="row between"><h2>✈ Book stays, guides &amp; transport</h2></div>
+      <p class="small muted">heyBro never processes payments — these open real search sites in a new tab, same as the Book page.</p>
+      <div id="dest-booking"></div>
+    </section>
+
+    <section class="panel">
+      <h2>🚕 Getting around — by traveler type</h2>
+      <div id="dest-transport-tabs" class="transport-tabs"></div>
+      <div id="dest-transport"></div>
+    </section>
+
+    <section class="panel cta-panel">
+      <h2>Ready to plan it day by day?</h2>
+      <p class="small muted">Starts a new itinerary with {{ dest.name }} pre-filled as day one — fully editable from there.</p>
+      <a id="dest-plan-link" class="btn-cta" href="{{ url_for('itinerary_page') }}">🗒 Build my itinerary →</a>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/destination.js') }}"></script>
+{% endblock %}

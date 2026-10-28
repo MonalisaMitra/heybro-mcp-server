@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}My account — heyBro{% endblock %}
+{% block tagline %}Your profile and emergency contacts — used by the SOS feature, nowhere else.{% endblock %}
+
+{% block content %}
+  <section class="panel auth-panel">
+    <div class="row between"><h2>Signed in as {{ current_user.username }}</h2>
+      <form method="post" action="{{ url_for('auth.logout_submit') }}"><button type="submit" class="btn-ghost">Log out</button></form>
+    </div>
+    <form method="post" action="{{ url_for('auth.account_update') }}" class="book-form" autocomplete="on">
+      <div class="book-row">
+        <label>Email<input type="email" name="email" value="{{ current_user.email or '' }}"></label>
+        <label>Home country code (optional)<input type="text" name="home_country_code" maxlength="2" style="text-transform:uppercase" value="{{ current_user.home_country_code or '' }}" placeholder="e.g. IN"></label>
+      </div>
+      <button type="submit">Save profile</button>
+    </form>
+  </section>
+
+  <section class="panel auth-panel">
+    <div class="row between"><h2>Emergency contacts</h2><span class="badge none">Used by SOS</span></div>
+    <p class="small muted">The SOS widget (🆘, top right of every page) pre-fills your <strong>primary</strong> contact when you
+      tap "Send to emergency contact" — heyBro still opens your own phone's share/SMS/email composer, it never sends
+      anything by itself.</p>
+
+    {% if contacts %}
+      <ul class="contact-list">
+        {% for c in contacts %}
+          <li class="contact-row{% if c.is_primary %} primary{% endif %}">
+            <div>
+              <strong>{{ c.name }}</strong>{% if c.is_primary %}<span class="badge live">Primary</span>{% endif %}
+              {% if c.relation %}<span class="small muted"> · {{ c.relation }}</span>{% endif %}<br>
+              <span class="small muted">{{ c.phone or "no phone" }}{% if c.email %} · {{ c.email }}{% endif %}</span>
+            </div>
+            <div class="contact-actions">
+              {% if not c.is_primary %}
+                <form method="post" action="{{ url_for('auth.account_make_primary', contact_id=c.id) }}">
+                  <button type="submit" class="btn-ghost small">Make primary</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('auth.account_delete_contact', contact_id=c.id) }}">
+                <button type="submit" class="btn-ghost small" title="Remove">✕ Remove</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="hint">No emergency contacts saved yet — add one below so SOS has somewhere to send to.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('auth.account_add_contact') }}" class="book-form" autocomplete="on">
+      <div class="book-row">
+        <label>Name<input type="text" name="name" required placeholder="e.g. Mom"></label>
+        <label>Relation (optional)<input type="text" name="relation" placeholder="e.g. Mother"></label>
+      </div>
+      <div class="book-row">
+        <label>Phone (for SMS/call)<input type="tel" name="phone" placeholder="+91 98765 43210"></label>
+        <label>Email (optional)<input type="email" name="email"></label>
+      </div>
+      <button type="submit">Add contact</button>
+    </form>
+  </section>
+{% endblock %}

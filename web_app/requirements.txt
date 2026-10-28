@@ -6,3 +6,8 @@
 Flask>=3.0,<4
 gunicorn>=21,<23
 fpdf2>=2.8,<3
+Flask-SQLAlchemy>=3.1,<4
+Flask-Login>=0.6,<0.7
+# Only needed if DATABASE_URL points at Postgres (e.g. a Render-managed Postgres instance)
+# instead of the SQLite file used by default — harmless to install either way.
+psycopg2-binary>=2.9,<3

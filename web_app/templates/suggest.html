@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Suggest a trip — heyBro{% endblock %}
+{% block tagline %}Tell us your vibe and budget — we'll match it against a curated list of places, then take you straight into planning.{% endblock %}
+
+{% block content %}
+  {% if not_found %}
+    <div class="error-box"><strong>Couldn't find that destination.</strong><br>"{{ not_found }}" isn't in the curated list below — pick one instead.</div>
+  {% endif %}
+
+  <form id="suggest-form" class="panel suggest-form">
+    <h2>What kind of trip?</h2>
+    <div class="chip-select" id="suggest-vibes">
+      {% for v in vibes %}
+        <label class="chip"><input type="checkbox" name="vibes" value="{{ v }}"><span>{{ v.replace("-", " ") }}</span></label>
+      {% endfor %}
+    </div>
+
+    <div class="book-row">
+      <label>Budget
+        <select name="budget">
+          <option value="">Any</option>
+          <option value="budget">Budget</option>
+          <option value="mid">Mid-range</option>
+          <option value="luxury">Luxury</option>
+        </select>
+      </label>
+      <label>Region
+        <select name="region">
+          <option value="">Anywhere</option>
+          <option value="south-asia">South Asia</option>
+          <option value="southeast-asia">Southeast Asia</option>
+          <option value="east-asia">East Asia</option>
+          <option value="north-africa">North Africa</option>
+          <option value="africa">Africa</option>
+          <option value="europe">Europe</option>
+          <option value="south-america">South America</option>
+          <option value="oceania">Oceania</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="book-row">
+      <label>Who's travelling?
+        <select name="traveler_type">
+          <option value="solo">Solo</option>
+          <option value="couple">Couple</option>
+          <option value="family">Family</option>
+          <option value="group">Group of friends</option>
+        </select>
+      </label>
+      <label>Trip length (days, optional)
+        <input type="number" name="trip_length_days" min="1" max="60" placeholder="e.g. 7">
+      </label>
+    </div>
+
+    <button type="submit">✨ Suggest trips</button>
+  </form>
+
+  <div id="suggest-out" class="out">
+    <p class="hint">Pick a few vibes above (or leave everything on "Any" for a varied starter set) and tap "Suggest trips".</p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/suggest.js') }}"></script>
+{% endblock %}
