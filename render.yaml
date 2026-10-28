@@ -1,7 +1,12 @@
-# Render Blueprint for the heyBro MCP server.
+# Render Blueprint for the heyBro services.
 #
-# The service is the MCP server from mcp_server/heybro_mcp.py exposed over HTTP/SSE,
-# not the full heyBro Flask app. Clients connect to  https://<service>.onrender.com/sse
+# Two independent web services share this one repo:
+#   heybro-mcp  — the MCP server (mcp_server/heybro_mcp.py) over HTTP/SSE, for AI
+#                 clients. Connect at  https://<service>.onrender.com/sse
+#   heybro-web  — a browsable front end (web_app/) a person opens directly, with
+#                 a search box and live weather/disasters/alerts/roads panels.
+#                 Open at  https://<service>.onrender.com/
+# Both call the same services/live_service.py providers independently of each other.
 services:
   - type: web
     name: heybro-mcp
@@ -24,5 +29,22 @@ services:
         value: "20"
       # Optional: unlocks get_road_incidents. Left unset, that one tool reports
       # honestly that road data is not configured and the other ten still work.
+      - key: TOMTOM_API_KEY
+        sync: false
+
+  - type: web
+    name: heybro-web
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r web_app/requirements.txt
+    startCommand: gunicorn -w 2 --chdir . -b 0.0.0.0:$PORT web_app.app:app
+    envVars:
+      - key: HEYBRO_USER_AGENT
+        value: heyBro-web/1.0 (monalisamitraofficial@gmail.com)
+      - key: HEYBRO_HTTP_TIMEOUT
+        value: "20"
+      # Optional: unlocks the road-closures panel. Left unset, the page reports
+      # honestly that road data isn't configured and every other panel still works.
       - key: TOMTOM_API_KEY
         sync: false

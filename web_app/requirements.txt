@@ -1,0 +1,7 @@
+# heyBro web app — deploy dependencies.
+#
+# Lightweight on purpose: the MCP SDK isn't needed here, only Flask to serve
+# the page/API and gunicorn to run it in production. All provider calls go
+# through the urllib-based services/http.py (no requests dependency).
+Flask>=3.0,<4
+gunicorn>=21,<23
