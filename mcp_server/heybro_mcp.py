@@ -172,6 +172,7 @@ except ImportError:
 
 try:
     from mcp.server.fastmcp import FastMCP  # noqa: E402
+    from mcp.server.transport_security import TransportSecuritySettings  # noqa: E402
 except ImportError:  # pragma: no cover - import guard for a clearer message
     raise SystemExit(
         "The MCP SDK is missing. Install it with:\n"
@@ -613,6 +614,17 @@ if __name__ == "__main__":
         mcp.settings.host = os.environ.get("HEYBRO_MCP_HOST", "0.0.0.0")
         mcp.settings.port = int(
             os.environ.get("PORT") or os.environ.get("HEYBRO_MCP_PORT") or 8000
+        )
+
+        # FastMCP was constructed above with the default loopback host, which made
+        # it quietly lock transport_security.allowed_hosts to 127.0.0.1/localhost/::1.
+        # Reassigning .host just above doesn't touch that list, so every request
+        # arriving with a real public Host header (e.g. heybro-mcp.onrender.com)
+        # would otherwise be rejected with HTTP 421 "Invalid Host header". Hosted
+        # platforms front the service with their own routing/TLS anyway, so the
+        # DNS-rebinding check isn't protecting anything here — disable it.
+        mcp.settings.transport_security = TransportSecuritySettings(
+            enable_dns_rebinding_protection=False
         )
 
     mcp.run(transport=transport)
